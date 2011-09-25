@@ -1,82 +1,118 @@
 package conch.yaoms.reader;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import conch.yaoms.reader.buffer.etxt.EtxtBuffer;
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.Toast;
+import conch.yaoms.reader.list.etxt.EtxtLister;
 import conch.yaoms.reader.model.BookCheckFile;
 import conch.yaoms.reader.model.etxt.EtxtCheckFile;
 
-import android.app.Activity;
-import android.os.Bundle;
-
 public class MainActivity extends Activity {
-    /** Called when the activity is first created. */
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.main);
-        
-        
-        File chkFileDir = new File(getFilesDir(), "chk");
-        File[] chks = chkFileDir.listFiles(new FilenameFilter() {
-			
-			@Override
-			public boolean accept(File dir, String filename) {
-				return filename.endsWith(".chk");
-			}
-		});
-        
-        List<EtxtCheckFile> checkFiles = new ArrayList<EtxtCheckFile>();
-        for (File chkFile : chks) {
-        	EtxtCheckFile checkFile = new EtxtCheckFile();
-			try {
-				BufferedReader reader = new BufferedReader(new FileReader(chkFile));
-				String line = null;
-				while ((line = reader.readLine()) != null) {
-					if (line.matches("^sign:\\w\\+$")) {
-						checkFile.setMd5sum(line.substring(5));
-					}
-					if (line.matches("^path:.\\+$")) {
-						checkFile.setFullName(line.substring(5));
-					}
-					if (line.matches("^time:\\d\\+$")) {
-						checkFile.setLastReadTime(Long.parseLong(line.substring(5)));
-					}
-					if (line.matches("^index:\\d\\+$")) {
-						checkFile.setCurrentChapterIndex(Integer.parseInt(line.substring(6)));
-					}
-					checkFile.setOk(false);
-				}
-				checkFiles.add(checkFile);
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+
+	private List<BookCheckFile> checkFiles;
+
+	/** Called when the activity is first created. */
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.main);
+
+		File chkFileDir = new File(getFilesDir(), "chk");
+		
+		List<BookCheckFile> checkFiles = new EtxtLister()
+				.getCheckFiles(chkFileDir);
+		
+		if (checkFiles == null) {
+			checkFiles = new ArrayList<BookCheckFile>();
 		}
-        
-        for (EtxtCheckFile etxtCheckFile : checkFiles) {
-			try {
-				String md5sum = etxtCheckFile.md5sum(etxtCheckFile.getFullNme());
-				if (md5sum.equalsIgnoreCase(etxtCheckFile.getMD5Sum())) {
-					etxtCheckFile.setOk(true);
-				}
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+
+//		EtxtBuffer buffer = new EtxtBuffer(checkFiles.get(0));
+//		buffer.getCurrentChapter().getChapterBody();
+
+	}
+
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case 0:
+			selectFile();
+			break;
+
+		default:
+			break;
 		}
-        
-        EtxtBuffer buffer = new EtxtBuffer(checkFiles.get(0));
-        buffer.getCurrentChapter().getChapterBody();
-    }
+		return false;
+	}
+
+	public boolean onCreateOptionsMenu(Menu menu) {
+		super.onCreateOptionsMenu(menu);
+		menu.add(0, 0, 0, R.string.open);
+		return true;
+	}
+
+	/**
+	 * Opens System Explorer to open a file.
+	 */
+	private static final int REQUEST_RESULT = 1;
+
+	private void selectFile() {
+		Intent intent = new Intent("conch.yaoms.action.PICK_FILE");
+
+		Bundle bundle = new Bundle();
+		bundle.putString("path", "/sdcard");
+		bundle.putString("suffix", ".cfg");
+		intent.putExtras(bundle);
+
+		startActivityForResult(intent, REQUEST_RESULT);
+	}
+
+	/**
+	 * This is called when the user has selected the file or directory and
+	 * clicked a button to return to your application.
+	 */
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode,
+			Intent intent) {
+		super.onActivityResult(requestCode, resultCode, intent);
+
+		switch (requestCode) {
+		case REQUEST_RESULT:
+			if (resultCode == RESULT_OK && intent != null) {
+				// obtain the filename
+				String filename = intent.getDataString();
+				if (filename != null) {
+					// Get rid of URI prefix:
+					if (filename.startsWith("file://")) {
+						filename = filename.substring(7);
+					}
+					// Do something with the file here
+					Toast.makeText(this, filename, Toast.LENGTH_SHORT).show();
+					EtxtCheckFile checkFile = new EtxtCheckFile();
+					checkFile.setFullName(filename);
+					checkFile.setCurrentChapterIndex(0);
+					checkFile.setLastReadTime(0);
+					try {
+						checkFile.setMd5sum(checkFile.md5sum(filename));
+					} catch (FileNotFoundException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					checkFile.setOk(true);
+					checkFiles.add(checkFile);
+				}
+			}
+			break;
+		}
+	}
 }
