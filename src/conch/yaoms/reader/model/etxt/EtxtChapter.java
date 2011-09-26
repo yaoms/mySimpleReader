@@ -23,8 +23,8 @@ public class EtxtChapter implements BookChapter {
 	}
 
 	@Override
-	public String getChapterTitle() {
-		return chapterTitle.getTitle();
+	public BookChapterTitle getChapterTitle() {
+		return chapterTitle;
 	}
 
 	@Override

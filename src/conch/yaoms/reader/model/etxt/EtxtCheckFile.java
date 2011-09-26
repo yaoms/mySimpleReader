@@ -4,23 +4,39 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
+
+import android.util.Log;
 
 import conch.yaoms.reader.model.BookCheckFile;
 import conch.yaoms.utils.MD5Utils;
 import conch.yaoms.utils.StreamUtils;
 
 public class EtxtCheckFile implements BookCheckFile {
-	
+
 	private int currentChapterIndex;
-	
+
 	private long lastReadTime;
-	
+
 	private String fullName;
-	
-	private String md5sum;
-	
+
+	private String sign;
+
 	private boolean ok;
-	
+
+	private File baseDir;
+
+	public EtxtCheckFile(File baseDir) {
+		setBaseDir(baseDir);
+	}
+
+	public File getBaseDir() {
+		return baseDir;
+	}
+
+	public void setBaseDir(File baseDir) {
+		this.baseDir = baseDir;
+	}
 
 	public boolean isOk() {
 		return ok;
@@ -41,8 +57,8 @@ public class EtxtCheckFile implements BookCheckFile {
 	}
 
 	@Override
-	public String getMD5Sum() {
-		return md5sum;
+	public String getSign() {
+		return sign;
 	}
 
 	public void setCurrentChapterIndex(int currentChapterIndex) {
@@ -53,23 +69,45 @@ public class EtxtCheckFile implements BookCheckFile {
 		this.fullName = fullName;
 	}
 
-	public void setMd5sum(String md5sum) {
-		this.md5sum = md5sum;
+	public void setSign(String sign) {
+		this.sign = sign;
 	}
 
 	@Override
-	public String md5sum(String fullName) throws FileNotFoundException, IOException {
-		byte[] data = StreamUtils.getBytes(new FileInputStream(new File(fullName)));
-		return MD5Utils.md5sum(data);
+	public String sign(String fullName) {
+		File file = new File(fullName);
+		if (file.exists() && file.isFile()) {
+			return "" + file.length();
+		} else {
+			return "";
+		}
 	}
 
 	@Override
 	public long getLastReadTime() {
 		return lastReadTime;
 	}
-	
+
 	public void setLastReadTime(long lastReadTime) {
 		this.lastReadTime = lastReadTime;
+	}
+
+	public void save() {
+		try {
+			File file = new File(baseDir, getSign() + ".chk");
+			PrintWriter pw = new PrintWriter(file);
+			pw.print("sign:");
+			pw.println(getSign());
+			pw.print("path:");
+			pw.println(getFullNme());
+			pw.print("time:");
+			pw.println(getLastReadTime());
+			pw.print("index:");
+			pw.println(getCurrentChapterIndex());
+			pw.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 }

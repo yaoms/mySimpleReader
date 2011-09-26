@@ -1,14 +1,12 @@
 package conch.yaoms.reader.model;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
 
 
 public interface BookCheckFile {
 	
 	String getFullNme();
 
-	String getMD5Sum();
+	String getSign();
 	
 	int getCurrentChapterIndex(); 
 	
@@ -20,6 +18,6 @@ public interface BookCheckFile {
 	
 
 	
-	String md5sum(String fullName) throws FileNotFoundException, IOException;
+	String sign(String fullName);
 	
 }

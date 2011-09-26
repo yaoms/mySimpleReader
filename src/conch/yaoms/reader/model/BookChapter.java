@@ -2,7 +2,7 @@ package conch.yaoms.reader.model;
 
 public interface BookChapter {
 
-	String getChapterTitle();
+	BookChapterTitle getChapterTitle();
 
 	int getCharacterCount();
 
